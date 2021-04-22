@@ -1,4 +1,5 @@
 // Copyright Marc-Olivier Rodrigue 2021
+#include "DrawDebugHelpers.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Grabber.h"
@@ -31,8 +32,20 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 
 	FVector PlayerViewLocation;
 	FRotator PlayerViewRotation;
+
 	GetWorld() -> GetFirstPlayerController() -> GetPlayerViewPoint(PlayerViewLocation, PlayerViewRotation);
 
-	UE_LOG(LogTemp, Warning, TEXT("Location: %s, Rotation: %s"), *(PlayerViewLocation.ToString()), *(PlayerViewRotation.ToString()));
+	FVector EndPoint = PlayerViewLocation + PlayerViewRotation.Vector() * Reach;
+
+	DrawDebugLine(
+		GetWorld(),
+		PlayerViewLocation, 
+		EndPoint,
+		FColor(0, 255, 0, 1),
+		false,
+		0.f,
+		0,
+		3.f
+	);
 }
 
