@@ -4,6 +4,8 @@
 #include "GameFramework/PlayerController.h"
 #include "Grabber.h"
 
+#define OUT
+
 // Sets default values for this component's properties
 UGrabber::UGrabber()
 {
@@ -19,9 +21,9 @@ UGrabber::UGrabber()
 void UGrabber::BeginPlay()
 {
 	Super::BeginPlay();
-
-	UE_LOG(LogTemp, Warning, TEXT("Grabber here!"));
 	
+	FindPhysicsHandle();
+	BindInputs();
 }
 
 
@@ -33,19 +35,59 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 	FVector PlayerViewLocation;
 	FRotator PlayerViewRotation;
 
-	GetWorld() -> GetFirstPlayerController() -> GetPlayerViewPoint(PlayerViewLocation, PlayerViewRotation);
+	GetWorld() -> GetFirstPlayerController() -> GetPlayerViewPoint(OUT PlayerViewLocation,  OUT PlayerViewRotation);
 
 	FVector EndPoint = PlayerViewLocation + PlayerViewRotation.Vector() * Reach;
 
-	DrawDebugLine(
-		GetWorld(),
-		PlayerViewLocation, 
+	FHitResult Hit;
+	FCollisionQueryParams TraceParams(FName(TEXT("")), false, GetOwner());
+	
+	GetWorld() -> LineTraceSingleByObjectType(
+		OUT Hit,
+		PlayerViewLocation,
 		EndPoint,
-		FColor(0, 255, 0, 1),
-		false,
-		0.f,
-		0,
-		3.f
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody),
+		TraceParams
 	);
+	
+	AActor* FirstActorHit = Hit.GetActor();
+	if (FirstActorHit) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *FirstActorHit -> GetName());
+	}
+	
 }
 
+void UGrabber::Grab()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Input Grab binding worked!"));
+}
+
+void UGrabber::Release()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Input Release binding worked!"));
+}
+
+void UGrabber::FindPhysicsHandle() 
+{
+	PhysicsHandle = GetOwner() -> FindComponentByClass<UPhysicsHandleComponent>();
+	if (!PhysicsHandle) 
+	{
+		UE_LOG(LogTemp, Error, TEXT("AActor %s must have a UPhysicsHandleComponent"), *GetOwner() -> GetName());
+	}
+}
+
+void UGrabber::BindInputs()
+{
+	//GrabHanble = GetOwner() -> FindComponentByClass<UInputComponent>();
+	GrabHanble = GetOwner() -> InputComponent;
+	if (GrabHanble) 
+	{
+		GrabHanble -> BindAction("Grab", IE_Pressed, this, &UGrabber::Grab);
+		GrabHanble -> BindAction("Grab", IE_Released, this, &UGrabber::Release);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("No UInputComponent found for %s"), *GetOwner() -> GetName());
+	}
+}
