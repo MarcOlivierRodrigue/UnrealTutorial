@@ -32,40 +32,29 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	FVector PlayerViewLocation;
-	FRotator PlayerViewRotation;
-
-	GetWorld() -> GetFirstPlayerController() -> GetPlayerViewPoint(OUT PlayerViewLocation,  OUT PlayerViewRotation);
-
-	FVector EndPoint = PlayerViewLocation + PlayerViewRotation.Vector() * Reach;
-
-	FHitResult Hit;
-	FCollisionQueryParams TraceParams(FName(TEXT("")), false, GetOwner());
-	
-	GetWorld() -> LineTraceSingleByObjectType(
-		OUT Hit,
-		PlayerViewLocation,
-		EndPoint,
-		FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody),
-		TraceParams
-	);
-	
-	AActor* FirstActorHit = Hit.GetActor();
-	if (FirstActorHit) 
+	if (PhysicsHandle && PhysicsHandle -> GrabbedComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *FirstActorHit -> GetName());
+		CalcPlayerViewReachEnd();
+		PhysicsHandle -> SetTargetLocation(PlayeViewReachEnd);
 	}
-	
 }
 
 void UGrabber::Grab()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Input Grab binding worked!"));
+	FHitResult Hit = GetHitResult();
+	UPrimitiveComponent* ComponentHit = Hit.GetComponent();
+	if (ComponentHit) 
+	{
+		PhysicsHandle -> GrabComponentAtLocation(ComponentHit, NAME_None, PlayeViewReachEnd);	
+	}
 }
 
 void UGrabber::Release()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Input Release binding worked!"));
+	if (PhysicsHandle)
+	{
+		PhysicsHandle -> ReleaseComponent();
+	}
 }
 
 void UGrabber::FindPhysicsHandle() 
@@ -90,4 +79,29 @@ void UGrabber::BindInputs()
 	{
 		UE_LOG(LogTemp, Error, TEXT("No UInputComponent found for %s"), *GetOwner() -> GetName());
 	}
+}
+
+FHitResult UGrabber::GetHitResult()
+{
+	CalcPlayerViewReachEnd();
+	FHitResult Hit;
+	FCollisionQueryParams TraceParams(FName(TEXT("")), false, GetOwner());
+	
+	GetWorld() -> LineTraceSingleByObjectType(
+		OUT Hit,
+		PlayerViewLocation,
+		PlayeViewReachEnd,
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody),
+		TraceParams
+	);
+	
+	return Hit;
+}
+
+void UGrabber::CalcPlayerViewReachEnd()
+{
+	FRotator PlayerViewRotation;
+	GetWorld() -> GetFirstPlayerController() -> GetPlayerViewPoint(OUT PlayerViewLocation,  OUT PlayerViewRotation);
+
+	PlayeViewReachEnd = PlayerViewLocation + PlayerViewRotation.Vector() * Reach;
 }

@@ -27,10 +27,14 @@ protected:
 private:
 	UPhysicsHandleComponent* PhysicsHandle = nullptr;
 	UInputComponent* GrabHanble = nullptr;
+	FVector PlayerViewLocation;
+	FVector PlayeViewReachEnd;
 	float Reach = 200.f;
 
 	void Grab();
 	void Release();
 	void FindPhysicsHandle();
 	void BindInputs();
+	void CalcPlayerViewReachEnd();
+	FHitResult GetHitResult();
 };
