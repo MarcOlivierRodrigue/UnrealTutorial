@@ -30,6 +30,8 @@ void UOpenDoor::BeginPlay()
 
 	StartingYaw = GetOwner() -> GetActorRotation().Yaw;
 	CurrentYaw = StartingYaw;
+	CalcTargetYaw();
+	FindAudioComponent();
 }
 
 
@@ -37,16 +39,18 @@ void UOpenDoor::BeginPlay()
 void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	if(PressurePlate) 
+	if(PressurePlate && DoorMovementAudio) 
 	{
 		float currTotalActorsMass = CalcTotalActorsMass();
 		if (currTotalActorsMass >= RequiredMassToOpen)
 		{
+			hasCloseAudioPlayed = false;
 			DoorLastOpened = GetWorld() -> GetTimeSeconds();
 			OpenDoor(DeltaTime);
 		}
-		else if (GetWorld() -> GetTimeSeconds() - DoorLastOpened >= DoorCloseDelay)
+		else if (DoorLastOpened != 0.f && GetWorld() -> GetTimeSeconds() - DoorLastOpened >= DoorCloseDelay)
 		{
+			hasOpenAudioPlayed = false;
 			CloseDoor(DeltaTime);
 		}
 	}
@@ -54,17 +58,43 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 
 
 void UOpenDoor::OpenDoor(float DeltaTime)
-{
-	CurrentYaw = FMath::FInterpConstantTo(CurrentYaw, StartingYaw + OpenAngle,  DeltaTime, DoorOpenSpeed);
-	GetOwner() -> SetActorRotation(FRotator(0.f, CurrentYaw, 0.f));
+{ 
+	if (CurrentYaw != TargetYaw)
+	{
+		CurrentYaw = FMath::FInterpConstantTo(CurrentYaw, TargetYaw,  DeltaTime, DoorOpenSpeed);
+		GetOwner() -> SetActorRotation(FRotator(0.f, CurrentYaw, 0.f));
+	}
+	
+	if (!hasOpenAudioPlayed) 
+	{
+		DoorMovementAudio -> Play();
+		hasOpenAudioPlayed = true;
+	}
+
 }
 
 void UOpenDoor::CloseDoor(float DeltaTime)
 {
-	CurrentYaw = FMath::FInterpConstantTo(CurrentYaw, StartingYaw,  DeltaTime, DoorCloseSpeed);
-	GetOwner() -> SetActorRotation(FRotator(0.f, CurrentYaw, 0.f));
+	if (CurrentYaw != StartingYaw)
+	{
+		CurrentYaw = FMath::FInterpConstantTo(CurrentYaw, StartingYaw,  DeltaTime, DoorCloseSpeed);
+		GetOwner() -> SetActorRotation(FRotator(0.f, CurrentYaw, 0.f));
+	}
+	else if (!hasCloseAudioPlayed) 
+	{
+		DoorMovementAudio -> Play();
+		hasCloseAudioPlayed = true;
+	}
 }
 
+void UOpenDoor::FindAudioComponent()
+{
+	DoorMovementAudio = GetOwner() -> FindComponentByClass<UAudioComponent>();
+	if (!DoorMovementAudio)
+	{
+		UE_LOG(LogTemp, Error, TEXT("AActor %s must have a UAudioComponent"), *GetOwner() -> GetName());
+	}
+}
 
 const float UOpenDoor::CalcTotalActorsMass()
 {
@@ -81,4 +111,13 @@ const float UOpenDoor::CalcTotalActorsMass()
 	}
 
 	return TotalMass;
+}
+
+void UOpenDoor::CalcTargetYaw()
+{
+	TargetYaw = StartingYaw + OpenAngle;
+	while (TargetYaw >= 360.f)
+	{
+		TargetYaw -= 360.f;
+	}
 }

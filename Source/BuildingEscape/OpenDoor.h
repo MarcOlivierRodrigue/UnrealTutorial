@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Engine/TriggerVolume.h"
+#include "Components/AudioComponent.h"
 #include "OpenDoor.generated.h"
 
 
@@ -24,14 +25,22 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	FRotator DoorRotation;
+	bool hasOpenAudioPlayed = false;
+	bool hasCloseAudioPlayed = false;
 	float StartingYaw; 
 	float CurrentYaw;
+	float TargetYaw;
 	float DoorLastOpened = 0.f;
+	FRotator DoorRotation;
 
 	void OpenDoor(float DeltaTime);
 	void CloseDoor(float DeltaTime);
+	void CalcTargetYaw();
+	void FindAudioComponent();
 	const float CalcTotalActorsMass();
+
+	UPROPERTY()
+	UAudioComponent* DoorMovementAudio = nullptr;
 
 	UPROPERTY(EditAnywhere)
 	ATriggerVolume* PressurePlate = nullptr;
