@@ -24,17 +24,17 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	AActor* ActorThatOpens;	
 	FRotator DoorRotation;
 	float StartingYaw; 
 	float CurrentYaw;
-	float DoorLastOpened;
+	float DoorLastOpened = 0.f;
 
 	void OpenDoor(float DeltaTime);
 	void CloseDoor(float DeltaTime);
+	const float CalcTotalActorsMass();
 
 	UPROPERTY(EditAnywhere)
-	ATriggerVolume* PressurePlate;
+	ATriggerVolume* PressurePlate = nullptr;
 
 	UPROPERTY(EditAnywhere)
 	float OpenAngle = 90.f;
@@ -43,9 +43,11 @@ private:
 	float DoorCloseDelay = 2.f;
 
 	UPROPERTY(EditAnywhere)
+	float RequiredMassToOpen = 50.f;
+
+	UPROPERTY(EditAnywhere)
 	int32 DoorOpenSpeed = 110;
 
 	UPROPERTY(EditAnywhere)
 	int32 DoorCloseSpeed = 110;
-	
 };

@@ -6,6 +6,8 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Actor.h"
 
+#define OUT
+
 // Sets default values for this component's properties
 UOpenDoor::UOpenDoor()
 {
@@ -28,7 +30,6 @@ void UOpenDoor::BeginPlay()
 
 	StartingYaw = GetOwner() -> GetActorRotation().Yaw;
 	CurrentYaw = StartingYaw;
-	ActorThatOpens = GetWorld() -> GetFirstPlayerController() -> GetPawn();
 }
 
 
@@ -36,15 +37,18 @@ void UOpenDoor::BeginPlay()
 void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	if (PressurePlate && PressurePlate->IsOverlappingActor(ActorThatOpens))
+	if(PressurePlate) 
 	{
-		OpenDoor(DeltaTime);
-		DoorLastOpened = GetWorld() -> GetTimeSeconds();
-	}
-	else if (GetWorld() -> GetTimeSeconds() - DoorLastOpened >= DoorCloseDelay)
-	{
-		CloseDoor(DeltaTime);
+		float currTotalActorsMass = CalcTotalActorsMass();
+		if (currTotalActorsMass >= RequiredMassToOpen)
+		{
+			DoorLastOpened = GetWorld() -> GetTimeSeconds();
+			OpenDoor(DeltaTime);
+		}
+		else if (GetWorld() -> GetTimeSeconds() - DoorLastOpened >= DoorCloseDelay)
+		{
+			CloseDoor(DeltaTime);
+		}
 	}
 }
 
@@ -59,4 +63,22 @@ void UOpenDoor::CloseDoor(float DeltaTime)
 {
 	CurrentYaw = FMath::FInterpConstantTo(CurrentYaw, StartingYaw,  DeltaTime, DoorCloseSpeed);
 	GetOwner() -> SetActorRotation(FRotator(0.f, CurrentYaw, 0.f));
+}
+
+
+const float UOpenDoor::CalcTotalActorsMass()
+{
+	float TotalMass = 0.f;
+	TArray<UPrimitiveComponent*> OverlappingComponents;
+	PressurePlate -> GetOverlappingComponents(OUT OverlappingComponents);
+	
+	for (UPrimitiveComponent* Component : OverlappingComponents)
+	{
+		if (Component) 
+		{
+			TotalMass += Component -> GetMass();
+		}
+	}
+
+	return TotalMass;
 }

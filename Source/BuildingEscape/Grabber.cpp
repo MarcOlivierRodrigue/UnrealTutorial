@@ -16,7 +16,6 @@ UGrabber::UGrabber()
 	// ...
 }
 
-
 // Called when the game starts
 void UGrabber::BeginPlay()
 {
@@ -25,7 +24,6 @@ void UGrabber::BeginPlay()
 	FindPhysicsHandle();
 	BindInputs();
 }
-
 
 // Called every frame
 void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
